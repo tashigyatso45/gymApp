@@ -1,29 +1,14 @@
-import React, {useEffect, useState} from "react";
-
-// import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import GymCard from './GymCard'
-import Navbar from './Navbar'
-import Home from "./Home";
-import AddGymForm from "./AddGymForm";
-import AddReview from "./AddReview";
-import Gym from "./Gym";
-
+import { Button } from "./ui/button";
 
 function App() {
-
-
   return (
-    <div className='mainpage'>
-        <Navbar />
-  
-
-        
-        
-    
+    <div className="min-h-screen flex items-center justify-center gap-4">
+      <Button>Primary</Button>
+      <Button variant="outline">Outline</Button>
+      <Button variant="secondary">Secondary</Button>
+      <h1>Hello</h1>
     </div>
-
-
-  )
+  );
 }
 
 export default App;

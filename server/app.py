@@ -40,18 +40,9 @@ class Gyms(Resource):
         return make_response(new_gym.to_dict(), 201)
              
         
-api.add_resource(Gyms, '/addgym')
+api.add_resource(Gyms, '/gyms')
 
 
-class Get_all_gyms(Resource):
-    def get(self):
-        gyms = [gym.to_dict() for gym in Gym.query.all()]
-        if not gyms:
-            return make_response({'error':'not a gym'}, 400)
-        
-        return make_response(gyms, 200)
-
-api.add_resource(Get_all_gyms, '/gyms')
 
 class Reviews(Resource):
     def get(self):
@@ -109,7 +100,7 @@ class Get_gym_by_id(Resource):
 
 
 
-api.add_resource(Get_gym_by_id, '/gyms/<id>')
+api.add_resource(Get_gym_by_id, '/gyms/<int:id>')
 
 
 
@@ -121,4 +112,7 @@ if __name__ == '__main__':
 
 
         
+
+with app.app_context():
+    db.create_all()
 

@@ -5,7 +5,7 @@ function MainPage() {
     <div className="maintitleclass">
       <h1>Gym App</h1>
       <p>
-        Welcome to the gym app
+        Welcome to the gynnnnnm app
       </p>
     </div>
   );
