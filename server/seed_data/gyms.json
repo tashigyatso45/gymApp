@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Iron Temple Gym",
+    "description": "Powerlifting-friendly gym with plenty of racks and plates.",
+    "rating": 5,
+    "image": "",
+    "location": "Albany, NY"
+  },
+  {
+    "name": "Pulse Fitness Studio",
+    "description": "Clean machines, great classes, beginner-friendly vibe.",
+    "rating": 4,
+    "image": "",
+    "location": "Troy, NY"
+  },
+  {
+    "name": "CrossTown Strength",
+    "description": "Strength-focused training, serious equipment, great community.",
+    "rating": 5,
+    "image": "",
+    "location": "Bronx, NYC"
+  },
+  {
+    "name": "Anytime Lift",
+    "description": "24/7 access with solid machine selection.",
+    "rating": 3,
+    "image": "",
+    "location": "Brooklyn, NYC"
+  }
+]

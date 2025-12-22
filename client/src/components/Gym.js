@@ -1,44 +1,77 @@
-import React, {useState, useEffect} from 'react';
-import { Link, useParams} from 'react-router-dom';
-import AddReview from './AddReview';
-import Navbar from './Navbar';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
-function Gym({ id, name, rating, location, description, image, onDelete}) {
+function Gym({ id, name, rating, location, description, image, onDelete }) {
+  const [showDescription, setShowDescription] = useState(false);
 
-   
-    const [renderDescription, setRenderDescription] = useState(false)
-    const handleToggle = () => {
-        setRenderDescription(!renderDescription)
-    }
-    
-    
-    const handleDelete = () => {
-        // Call the onDelete function passed from the parent component
-        onDelete(id);
-      };
-    
-      return (
-        <div className='cards_item'>
-          <img onClick={handleToggle} src={image} alt={name} className='cards_image'/>
-          <button>
-            <Link to={`/gyms/${id}`} className="inner-text">
-              View Gym
-            </Link>
-          </button>
-          <div className='card_content'></div>
-          <div className='card_title'>{name}</div>
-          <p className='card_text'>{renderDescription ? description : ''}</p>
-          <div className='card_detail'>
-            <p>Name : {name}</p>
-            {/* <p>Location : {location}</p> */}
-            <p>Rating: {rating}</p>
-            {/* <AddReview/> */}
-            
-          </div>
-          <button onClick={handleDelete}>Delete Gym</button>
-        </div>
-      );
-    }
-    
+  const handleDelete = () => {
+    onDelete?.(id);
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      {image ? (
+        <button
+          type="button"
+          onClick={() => setShowDescription((prev) => !prev)}
+          className="block w-full"
+          title="Toggle description"
+        >
+          <img src={image} alt={name} className="h-40 w-full object-cover" />
+        </button>
+      ) : null}
+
+      <CardHeader className="space-y-1">
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span className="truncate">{name}</span>
+          {rating != null ? (
+            <span className="text-sm font-medium text-muted-foreground">
+              ⭐ {rating}
+            </span>
+          ) : null}
+        </CardTitle>
+
+        <CardDescription>
+          {location ? location : "Location not provided"}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        {showDescription ? (
+          <p className="text-sm text-muted-foreground">
+            {description || "No description."}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {description || "No description."}
+          </p>
+        )}
+      </CardContent>
+
+      <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <Button asChild variant="outline" className="w-full sm:w-auto">
+          <Link to={`/gyms/${id}`}>View Gym</Link>
+        </Button>
+
+        <Button
+          variant="destructive"
+          onClick={handleDelete}
+          className="w-full sm:w-auto"
+        >
+          Delete
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
 export default Gym;
-

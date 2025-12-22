@@ -1,48 +1,134 @@
+import React, { useMemo, useState } from "react";
+import AddReview from "./AddReview";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
-import { useState } from "react"
-import AddReview from "./AddReview"
+export default function GymByIdCard({ single, setSingle }) {
+  // store which review IDs are expanded
+  const [openReviews, setOpenReviews] = useState(() => new Set());
 
-export default function GymByIdCard({single,setSingle}){
-    const [viewReview, setViewReview] = useState(false)
-    function toggleReview(){
-        setViewReview(!viewReview)
-    }
-    const renderReviews = single?.reviews?.map((review)=>{  
+  const reviews = useMemo(() => single?.reviews ?? [], [single]);
 
-        return (
-        <div className="reviews-container">
-            <h3 className="review-name">By:  {review.name}</h3>
-            <button className= 'toggle-review-description 'onClick={toggleReview} > Reviews </button>
-            <h3 className="review-description"> {viewReview ? review.review_description: ''}</h3>
-           
+  function toggleReview(reviewId) {
+    setOpenReviews((prev) => {
+      const next = new Set(prev);
+      if (next.has(reviewId)) next.delete(reviewId);
+      else next.add(reviewId);
+      return next;
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header card */}
+      <Card className="overflow-hidden">
+        {single?.image ? (
+          <img
+            src={single.image}
+            alt={single?.name || "Gym"}
+            className="h-64 w-full object-cover"
+          />
+        ) : null}
+
+        <CardHeader>
+          <CardTitle className="text-2xl">{single?.name}</CardTitle>
+          <CardDescription>
+            {single?.location ? single.location : "Location not provided"}
+          </CardDescription>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {single?.rating != null ? (
+              <span className="rounded-md border px-2 py-1 text-sm text-muted-foreground">
+                ⭐ {single.rating}
+              </span>
+            ) : (
+              <span className="rounded-md border px-2 py-1 text-sm text-muted-foreground">
+                No rating yet
+              </span>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {single?.description ? single.description : "No description."}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Reviews */}
+      <div className="space-y-3">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Reviews</h2>
+            <p className="text-sm text-muted-foreground">
+              {reviews.length
+                ? "What people are saying"
+                : "No reviews yet — be the first."}
+            </p>
+          </div>
         </div>
-        )
-        
 
-    })
-    
-    
-    return(
-        <div>
-            <img className= 'single-image'src={single.image}/>
-            <div className='single_title'>{single.name}</div>
-            
-            <div className='single-details'>
+        {reviews.length ? (
+          <div className="space-y-3">
+            {reviews.map((review) => {
+              const isOpen = openReviews.has(review.id);
+              return (
+                <Card key={review.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-base">
+                          By: {review.name}
+                        </CardTitle>
+                        {review.rating != null ? (
+                          <CardDescription>⭐ {review.rating}</CardDescription>
+                        ) : (
+                          <CardDescription>No rating</CardDescription>
+                        )}
+                      </div>
 
-                <p>description: {single.description} </p>
-                <p>location: {single.location} </p>
-                <p>Rating: {single.rating}</p>
-            </div>
-            <div className="single-gym-review">
-                <p>Reviews: {renderReviews}</p>
-            </div>
-                
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9"
+                        onClick={() => toggleReview(review.id)}
+                      >
+                        {isOpen ? "Hide" : "Read"}
+                      </Button>
+                    </div>
+                  </CardHeader>
 
+                  {isOpen ? (
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {review.review_description || "No review text."}
+                      </p>
+                    </CardContent>
+                  ) : null}
+                </Card>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
 
-                <AddReview setSingle={setSingle}/>
-                
-                
-           
-        </div>
-  )
+      {/* Add Review */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Add a review</CardTitle>
+          <CardDescription>Share your experience.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AddReview setSingle={setSingle} />
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

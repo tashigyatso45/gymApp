@@ -1,87 +1,137 @@
-import React from "react";
-import { useState,useEffect } from "react";
-import Navbar from "./Navbar";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 
+function AddReview({ setSingle }) {
+  const { id } = useParams();
 
+  const [form, setForm] = useState({
+    name: "",
+    rating: "",
+    review_description: "",
+  });
 
-function AddReview ({setSingle}){
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-        let {id}= useParams()
-        console.log(id)
-    
-        // useEffect(()=> {
-        //     console.log('Fetching data for id:', id);
-        //     fetch(`http://localhost:5555/gyms/${id}`)
-        //     .then((resp)=> resp.json())
-        //     .then((gymData)=>setSingle(gymData))
-        // },[])
+  function onChange(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
 
-const [newReview,setReview] = useState('')
-const [newName,setName] = useState('')
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
 
+    const name = form.name.trim();
+    const reviewText = form.review_description.trim();
 
-
-    function handleReview (e){
-        setReview(e.target.value)
+    if (!name) {
+      setError("Name is required.");
+      return;
     }
-    function handleName(e){
-        setName(e.target.value)
-    }
-    
-    
-    function handleSubmit(e){
-        e.preventDefault();
-        window.alert('review added')
-        const newUserReview = {
-            name:newName,
-            rating:'rating',
-            review_description:newReview,
-            gym_id: parseInt(id),
-            user_id:null
-        }
-        console.log(newUserReview)
-        fetch("http://localhost:5555/reviews",{
-            method:"POST",
-            headers:{
-                "Content-Type": "application/json",
-            },
-            body:JSON.stringify(newUserReview),
-        })
-        .then(response => response.json())
-        .then((newReview)=> setSingle(currentSingle=>({...currentSingle,reviews:[...currentSingle.reviews,newReview]})))
-        
-        
-        
-
+    if (!reviewText) {
+      setError("Review text is required.");
+      return;
     }
 
-return(
-    <form onSubmit = {handleSubmit}>
-        <input
-        value={newName}
-        onChange = {handleName}
-        placeholder = "Enter Name Here"
-        type = 'text'
-        name = 'newName'
+    // rating is optional; if provided, enforce 0–5 int
+    let rating = null;
+    if (form.rating !== "") {
+      const n = Number(form.rating);
+      if (!Number.isInteger(n) || n < 0 || n > 5) {
+        setError("Rating must be an integer from 0 to 5.");
+        return;
+      }
+      rating = n;
+    }
+
+    const payload = {
+      name,
+      rating, // null or int
+      review_description: reviewText,
+      gym_id: Number(id),
+      user_id: null,
+    };
+
+    setIsSubmitting(true);
+
+    try {
+      const resp = await fetch("http://localhost:5555/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `Request failed with status ${resp.status}`);
+      }
+
+      const createdReview = await resp.json();
+
+      // Safely append the new review to the current gym’s reviews
+      setSingle((current) => {
+        const existing = Array.isArray(current?.reviews) ? current.reviews : [];
+        return { ...current, reviews: [...existing, createdReview] };
+      });
+
+      // Clear form
+      setForm({ name: "", rating: "", review_description: "" });
+    } catch (err) {
+      setError(err.message || "Failed to add review.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {error ? (
+        <div className="rounded-md border px-3 py-2 text-sm">{error}</div>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Your name</label>
+          <Input
+            name="name"
+            value={form.name}
+            onChange={onChange}
+            placeholder="e.g., Tashi"
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Rating (optional)</label>
+          <Input
+            name="rating"
+            value={form.rating}
+            onChange={onChange}
+            placeholder="0–5"
+            inputMode="numeric"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Review</label>
+        <Textarea
+          name="review_description"
+          value={form.review_description}
+          onChange={onChange}
+          placeholder="What did you like/dislike?"
         />
-        
-        <input
-        value={newReview}
-        onChange={handleReview}
-        placeholder="Enter Review Here"
-        type='text'
-        name='newReview'
-        />
-       
+      </div>
 
-        <button type = 'submit' > Add Review
-        </button>
-       
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Posting..." : "Add Review"}
+      </Button>
     </form>
-
-)
-
+  );
 }
 
-export default AddReview
+export default AddReview;
