@@ -18,7 +18,7 @@ function Gym({ id, name, rating, location, description, image, onDelete }) {
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
       {image ? (
         <button
           type="button"
@@ -64,10 +64,13 @@ function Gym({ id, name, rating, location, description, image, onDelete }) {
 
         <Button
           variant="destructive"
-          onClick={handleDelete}
-          className="w-full sm:w-auto"
+          onClick={() => {
+            if (window.confirm("Remove this gym?")) {
+              onDelete(id);
+            }
+          }}
         >
-          Delete
+          Remove
         </Button>
       </CardFooter>
     </Card>
