@@ -20,14 +20,14 @@ This project was built to demonstrate full-stack development, RESTful API design
 
 ## 🛠 Tech Stack
 
-### Frontend 
+### Frontend
 
 - React
 - React Router
 - Tailwind CSS
 - shadcn/ui
 
-### Backend 
+### Backend
 
 - Python
 - Flask
@@ -40,7 +40,7 @@ This project was built to demonstrate full-stack development, RESTful API design
 
 ## 📸 Demo
 
-> Screenshots / demo GIF below
+> Screenshots
 
 - Home page with hero section and top-rated gyms
 - Gyms list with search & sort
@@ -73,7 +73,7 @@ flask run -p 5555
 Backend runs on :http://localhost:5555
 ```
 
-## Frontend Setup 
+## Frontend Setup
 
 ```bash
 cd client
@@ -83,7 +83,7 @@ npm start
 Frontend runs on : http://localhost:3000
 ```
 
-## Project Setup 
+## Project Setup
 
 gymApp/
 ├── client/ # React frontend
@@ -112,6 +112,7 @@ gymApp/
 - Deployment ( using render/fly.io)
 
 ## AUTHOR
+
 Tashi Gyatso
 Computer Science @ SUNY ALBANY
 
