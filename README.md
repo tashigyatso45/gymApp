@@ -7,7 +7,7 @@ This project was built to demonstrate full-stack development, RESTful API design
 
 ---
 
-## FEATURES OF THE APP
+## Features
 
 - Browse gyms with ratings, locations, and descriptions
 - Search and sort gyms by name or location
@@ -20,14 +20,14 @@ This project was built to demonstrate full-stack development, RESTful API design
 
 ## 🛠 Tech Stack
 
-### Frontend
+### Frontend 
 
 - React
 - React Router
 - Tailwind CSS
 - shadcn/ui
 
-### Backend
+### Backend 
 
 - Python
 - Flask
@@ -59,7 +59,7 @@ git clone https://github.com/yourusername/gymapp.git
 cd gymapp
 ```
 
-## BACKEND SET UP
+## Backend Setup
 
 ```bash
 cd server
@@ -73,7 +73,7 @@ flask run -p 5555
 Backend runs on :http://localhost:5555
 ```
 
-## FRONTEND SET UP
+## Frontend Setup 
 
 ```bash
 cd client
@@ -83,7 +83,7 @@ npm start
 Frontend runs on : http://localhost:3000
 ```
 
-## PROJECT STRUCTURE
+## Project Setup 
 
 gymApp/
 ├── client/ # React frontend
@@ -96,7 +96,7 @@ gymApp/
 │ ├── seed.py
 │ └── migrations/
 
-## KEY LEARNINGS
+## Key Learnings
 
 - Designing RESTful APIs with FLASK
 - Managing relational data with SQLalchemy
@@ -104,7 +104,7 @@ gymApp/
 - UX polish with Tailwind + Shadcn/ui
 - Handling empty states and loading states cleanly
 
-## FUTURE IMPROVEMENTS
+## Future Improvements
 
 - Authentication and user accounts
 - Map based gym discovery
@@ -112,7 +112,6 @@ gymApp/
 - Deployment ( using render/fly.io)
 
 ## AUTHOR
-
 Tashi Gyatso
 Computer Science @ SUNY ALBANY
 
