@@ -18,7 +18,7 @@ function Gym({ id, name, rating, location, description, image, onDelete }) {
   };
 
   return (
-    <Card className="transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+    <Card className="hover:shadow-xl transition-shadow">
       {image ? (
         <button
           type="button"

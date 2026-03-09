@@ -66,7 +66,7 @@ function GymById() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-4">
       <Button asChild variant="outline">
         <Link to="/gyms">← Back to gyms</Link>
       </Button>

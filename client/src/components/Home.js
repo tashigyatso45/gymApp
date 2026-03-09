@@ -1,179 +1,130 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Link } from "react-router-dom";
+import BoroughSection from "./BoroughSection";
+import { assignBorough } from "../lib/boroughUtils";
+
+const BOROUGH_CONFIG = [
+  {
+    name: "Manhattan",
+    description:
+      "From the steel-and-glass towers of Midtown to the boutique studios of the West Village, Manhattan sets the standard for urban fitness.",
+    photoUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80",
+    slug: "manhattan",
+  },
+  {
+    name: "Brooklyn",
+    description:
+      "Brooklyn's fitness culture is as eclectic as its neighborhoods — warehouses converted to CrossFit boxes, rooftop yoga, and everything between.",
+    photoUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=900&q=80",
+    slug: "brooklyn",
+  },
+  {
+    name: "Queens",
+    description:
+      "The most diverse borough in the world brings equally diverse training options, from martial arts dojos to Olympic-standard track facilities.",
+    photoUrl: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80",
+    slug: "queens",
+  },
+  {
+    name: "Bronx",
+    description:
+      "Birthplace of hip-hop and home to championship athletes, the Bronx carries a legacy of grit and determination into every gym.",
+    photoUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80",
+    slug: "bronx",
+  },
+];
+
+const BOROUGH_QUERIES = {
+  manhattan: `[out:json][timeout:25];(node["leisure"="fitness_centre"](40.6981,-74.0479,40.8820,-73.9072);way["leisure"="fitness_centre"](40.6981,-74.0479,40.8820,-73.9072);node["amenity"="gym"](40.6981,-74.0479,40.8820,-73.9072);way["amenity"="gym"](40.6981,-74.0479,40.8820,-73.9072););out count;`,
+  brooklyn:  `[out:json][timeout:25];(node["leisure"="fitness_centre"](40.5707,-74.0431,40.7394,-73.8333);way["leisure"="fitness_centre"](40.5707,-74.0431,40.7394,-73.8333);node["amenity"="gym"](40.5707,-74.0431,40.7394,-73.8333);way["amenity"="gym"](40.5707,-74.0431,40.7394,-73.8333););out count;`,
+  queens:    `[out:json][timeout:25];(node["leisure"="fitness_centre"](40.5431,-73.9626,40.8007,-73.7004);way["leisure"="fitness_centre"](40.5431,-73.9626,40.8007,-73.7004);node["amenity"="gym"](40.5431,-73.9626,40.8007,-73.7004);way["amenity"="gym"](40.5431,-73.9626,40.8007,-73.7004););out count;`,
+  bronx:     `[out:json][timeout:25];(node["leisure"="fitness_centre"](40.7856,-73.9338,40.9176,-73.7654);way["leisure"="fitness_centre"](40.7856,-73.9338,40.9176,-73.7654);node["amenity"="gym"](40.7856,-73.9338,40.9176,-73.7654);way["amenity"="gym"](40.7856,-73.9338,40.9176,-73.7654););out count;`,
+};
+
+async function fetchBoroughCount(query) {
+  const resp = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    body: query,
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  const total = data.elements?.find((e) => e.type === "count");
+  return total ? Number(total.tags?.total) : null;
+}
 
 export default function Home() {
-  const navigate = useNavigate();
-  const [q, setQ] = useState("");
-
-  const [gyms, setGyms] = useState([]);
-  const [loadingTop, setLoadingTop] = useState(true);
-  const [errorTop, setErrorTop] = useState("");
-
-  function handleSearch(e) {
-    e.preventDefault();
-    const query = q.trim();
-    navigate(query ? `/gyms?q=${encodeURIComponent(query)}` : "/gyms");
-  }
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoadingTop(true);
-      setErrorTop("");
-
-      try {
-        const resp = await fetch("http://localhost:5555/gyms");
-        if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
-        const data = await resp.json();
-        if (!cancelled) setGyms(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (!cancelled) setErrorTop(e.message || "Failed to load gyms.");
-      } finally {
-        if (!cancelled) setLoadingTop(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
+    const entries = Object.entries(BOROUGH_QUERIES);
+    Promise.all(
+      entries.map(([borough, query]) =>
+        fetchBoroughCount(query).then((count) => [borough, count])
+      )
+    ).then((results) => {
+      const map = {};
+      results.forEach(([borough, count]) => {
+        map[borough] = count;
+      });
+      setCounts(map);
+    });
   }, []);
 
-  const top3 = useMemo(() => {
-    return [...gyms]
-      .filter((g) => g.rating !== null && g.rating !== undefined)
-      .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
-      .slice(0, 3);
-  }, [gyms]);
-
   return (
-    <div className="space-y-10">
-      {/* HERO */}
-      <section className="rounded-2xl border bg-background">
-        <div className="px-6 py-12 sm:px-10 sm:py-16">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium text-muted-foreground">
-              GymFinder (Demo)
-            </p>
+    <div>
+      {/* Hero */}
+      <section className="relative h-[85vh] flex items-end">
+        <img
+          src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1600&q=80"
+          alt="NYC gym"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/55" />
 
-            <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-              Find a gym worth training at.
-            </h1>
-
-            <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-              Browse gyms, check ratings, and add reviews. Built with React,
-              Tailwind, shadcn/ui, Flask, and SQLite.
-            </p>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button asChild className="h-10">
-                <Link to="/gyms">Browse gyms</Link>
-              </Button>
-
-              <Button asChild variant="outline" className="h-10">
-                <Link to="/addgym">Add a gym</Link>
-              </Button>
-            </div>
-
-            <form onSubmit={handleSearch} className="mt-8">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search by name or location…"
-                  className="h-10"
-                />
-                <Button type="submit" variant="secondary" className="h-10">
-                  Search
-                </Button>
-              </div>
-            </form>
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-20 w-full">
+          <p className="text-xs uppercase tracking-widest text-white/60 mb-4">
+            New York City Gym Directory
+          </p>
+          <h1 className="text-5xl md:text-7xl text-white leading-tight mb-6 max-w-2xl">
+            Every gym.<br />Every borough.
+          </h1>
+          <div className="flex gap-6">
+            <Link
+              to="/gyms"
+              className="text-sm uppercase tracking-widest border border-white text-white px-6 py-3 hover:bg-white hover:text-foreground transition-colors"
+            >
+              Browse All Gyms
+            </Link>
+            <Link
+              to="/addgym"
+              className="text-sm uppercase tracking-widest text-white/70 hover:text-white transition-colors self-center"
+            >
+              Add a Gym →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* TOP RATED */}
-      <section className="space-y-3">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">
-              Top Rated Gyms
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Based on your current database ratings.
-            </p>
-          </div>
-          <Button asChild variant="outline" className="h-9">
-            <Link to="/gyms">View all</Link>
-          </Button>
-        </div>
+      {/* Borough Sections */}
+      <div>
+        {BOROUGH_CONFIG.map((b, i) => (
+          <BoroughSection
+            key={b.name}
+            name={b.name}
+            description={b.description}
+            photoUrl={b.photoUrl}
+            gymCount={counts[b.slug]}
+            reversed={i % 2 !== 0}
+          />
+        ))}
+      </div>
 
-        {loadingTop ? (
-          <div className="text-sm text-muted-foreground">
-            Loading top gyms...
-          </div>
-        ) : errorTop ? (
-          <div className="rounded-lg border p-4 text-sm">{errorTop}</div>
-        ) : top3.length === 0 ? (
-          <div className="rounded-lg border p-6 text-center">
-            <p className="text-sm text-muted-foreground">No rated gyms yet.</p>
-            <p className="mt-2 text-sm">
-              Add a gym with a rating, or run your seed script.
-            </p>
-            <Button asChild className="mt-4">
-              <Link to="/addgym">Add a gym</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {top3.map((g) => (
-              <Card
-                key={g.id}
-                className="overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              >
-                {g.image ? (
-                  <img
-                    src={g.image}
-                    alt={g.name}
-                    className="h-40 w-full object-cover"
-                  />
-                ) : null}
-
-                <CardHeader className="space-y-1">
-                  <CardTitle className="truncate">{g.name}</CardTitle>
-                  <CardDescription>
-                    {g.location || "Location not provided"}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-3">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    ⭐ {g.rating}/5
-                  </div>
-
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {g.description || "No description."}
-                  </p>
-
-                  <Button asChild className="w-full" variant="outline">
-                    <Link to={`/gyms/${g.id}`}>View details</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Footer strip */}
+      <div className="border-t py-10 text-center">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          Data sourced from OpenStreetMap contributors · Updated live
+        </p>
+      </div>
     </div>
   );
 }

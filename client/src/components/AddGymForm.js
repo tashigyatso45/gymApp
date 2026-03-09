@@ -81,6 +81,7 @@ function AddGymForm() {
   }
 
   return (
+    <div className="max-w-7xl mx-auto px-6 py-8">
     <Card className="max-w-xl">
       <CardHeader>
         <CardTitle>Add a Gym</CardTitle>
@@ -165,6 +166,7 @@ function AddGymForm() {
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 }
 

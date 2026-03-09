@@ -1,6 +1,5 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Button } from "./ui/button";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -10,24 +9,30 @@ const navLinks = [
 
 export default function Navbar() {
   return (
-    <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        {/* Left: Brand */}
-        <NavLink to="/" className="text-lg font-semibold tracking-tight">
-          GymFinder
+    <header className="sticky top-0 z-50 border-b bg-background">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        {/* Brand */}
+        <NavLink
+          to="/"
+          className="text-sm font-medium uppercase tracking-widest text-foreground"
+        >
+          NYC GYMS
         </NavLink>
 
-        {/* Right: Links */}
-        <nav className="flex items-center gap-2">
+        {/* Links */}
+        <nav className="flex items-center gap-8">
           {navLinks.map((link) => (
-            <NavLink key={link.to} to={link.to}>
+            <NavLink key={link.to} to={link.to} end={link.to === "/"}>
               {({ isActive }) => (
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  className="h-9"
+                <span
+                  className={`text-sm uppercase tracking-widest transition-colors ${
+                    isActive
+                      ? "border-b border-foreground text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   {link.label}
-                </Button>
+                </span>
               )}
             </NavLink>
           ))}

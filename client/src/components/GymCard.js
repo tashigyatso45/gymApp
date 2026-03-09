@@ -1,214 +1,228 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Gym from "./Gym";
+import OSMGymCard from "./OSMGymCard";
+import { useOverpassGyms } from "../hooks/useOverpassGyms";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
-function EmptyDatabaseState() {
-  return (
-    <div className="rounded-lg border p-8 text-center">
-      <p className="text-sm text-muted-foreground">No gyms yet.</p>
-      <p className="mt-2 text-sm">
-        Add your first gym or run your seed script to populate demo data.
-      </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
-        <a
-          href="/addgym"
-          className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium"
-        >
-          Add a gym
-        </a>
-        <div className="text-xs text-muted-foreground sm:self-center">
-          Tip: run <span className="font-mono">python seed.py</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+const BOROUGH_TABS = ["All NYC", "Manhattan", "Brooklyn", "Queens", "Bronx"];
 
-function EmptySearchState() {
+const BOROUGH_SLUG_MAP = {
+  manhattan: "Manhattan",
+  brooklyn: "Brooklyn",
+  queens: "Queens",
+  bronx: "Bronx",
+  "staten-island": "Staten Island",
+};
+
+function SkeletonCard() {
   return (
-    <div className="rounded-lg border p-8 text-center">
-      <p className="text-sm text-muted-foreground">
-        No gyms match your search.
-      </p>
-      <p className="mt-2 text-sm">
-        Try a different keyword (name, location, or description).
-      </p>
+    <div className="border border-border p-5 animate-pulse">
+      <div className="h-4 bg-muted rounded w-3/4 mb-3" />
+      <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+      <div className="h-3 bg-muted rounded w-2/3" />
     </div>
   );
 }
 
 function GymCard() {
-  const [gyms, setGyms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") || "");
+  const [activeBorough, setActiveBorough] = useState(() => {
+    const slug = searchParams.get("borough");
+    return slug ? (BOROUGH_SLUG_MAP[slug] || "All NYC") : "All NYC";
+  });
 
-  // UI state
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("rating_desc"); // default sort
+  // OSM gyms
+  const { gyms: osmGyms, loading, error, retry } = useOverpassGyms();
+
+  // Flask DB gyms
+  const [dbGyms, setDbGyms] = useState([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [showSubmissions, setShowSubmissions] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const resp = await fetch("http://localhost:5555/gyms");
-        if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
-
-        const data = await resp.json();
-        if (!cancelled) setGyms(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (!cancelled) setError(e.message || "Failed to load gyms.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
+    fetch("http://localhost:5555/gyms")
+      .then((r) => r.json())
+      .then((data) => setDbGyms(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setDbLoading(false));
   }, []);
 
   const handleDeleteGym = async (gymId) => {
     try {
-      const resp = await fetch(`http://localhost:5555/gyms/${gymId}`, {
-        method: "DELETE",
-      });
-
-      if (resp.ok) {
-        setGyms((prev) => prev.filter((g) => g.id !== gymId));
-      } else {
-        console.error("Failed to delete gym");
-      }
+      const resp = await fetch(`http://localhost:5555/gyms/${gymId}`, { method: "DELETE" });
+      if (resp.ok) setDbGyms((prev) => prev.filter((g) => g.id !== gymId));
     } catch (err) {
       console.error("Delete error:", err);
     }
   };
 
-  // ✅ Filter + Sort (derived)
-  const filteredGyms = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    let list = gyms;
-
-    if (q) {
-      list = list.filter((g) => {
-        const name = (g.name || "").toLowerCase();
-        const location = (g.location || "").toLowerCase();
-        const desc = (g.description || "").toLowerCase();
-        return name.includes(q) || location.includes(q) || desc.includes(q);
+  // Sync borough tab → URL
+  const handleBoroughChange = (tab) => {
+    setActiveBorough(tab);
+    if (tab === "All NYC") {
+      setSearchParams((prev) => { prev.delete("borough"); return prev; });
+    } else {
+      setSearchParams((prev) => {
+        prev.set("borough", tab.toLowerCase().replace(/ /g, "-"));
+        return prev;
       });
     }
+  };
 
-    const sorted = [...list];
-
-    sorted.sort((a, b) => {
-      const ar = a.rating ?? -1;
-      const br = b.rating ?? -1;
-
-      if (sort === "rating_desc") return br - ar;
-      if (sort === "rating_asc") return ar - br;
-
-      if (sort === "name_asc")
-        return (a.name || "").localeCompare(b.name || "");
-      if (sort === "name_desc")
-        return (b.name || "").localeCompare(a.name || "");
-
-      return 0;
+  const filteredGyms = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return osmGyms.filter((g) => {
+      const boroughMatch =
+        activeBorough === "All NYC" || g.borough === activeBorough;
+      const textMatch =
+        !q ||
+        g.name.toLowerCase().includes(q) ||
+        g.address.toLowerCase().includes(q);
+      return boroughMatch && textMatch;
     });
-
-    return sorted;
-  }, [gyms, query, sort]);
-
-  if (loading)
-    return <div className="text-sm text-muted-foreground">Loading gyms...</div>;
+  }, [osmGyms, activeBorough, query]);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Find a gym worth training at
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Search by location, name, or vibe - sort by what matters to you
+    <div>
+      {/* Dark header bar */}
+      <div className="bg-foreground text-primary-foreground py-8 px-6">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-xs uppercase tracking-widest text-white/50 mb-2">
+            OpenStreetMap · Live Data
           </p>
-        </div>
-
-        {/* Sort buttons */}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant={sort === "rating_desc" ? "default" : "outline"}
-            onClick={() => setSort("rating_desc")}
-          >
-            Rating ↓
-          </Button>
-          <Button
-            type="button"
-            variant={sort === "rating_asc" ? "default" : "outline"}
-            onClick={() => setSort("rating_asc")}
-          >
-            Rating ↑
-          </Button>
-          <Button
-            type="button"
-            variant={sort === "name_asc" ? "default" : "outline"}
-            onClick={() => setSort("name_asc")}
-          >
-            Name A–Z
-          </Button>
+          <h1 className="text-3xl md:text-4xl text-white">NYC Gym Directory</h1>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name, location, or description..."
-          className="h-10"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          className="h-10"
-          onClick={() => setQuery("")}
-        >
-          Clear
-        </Button>
-      </div>
-
-      {error ? (
-        <div className="rounded-md border px-3 py-2 text-sm">{error}</div>
-      ) : null}
-
-      {/* Results */}
-      {gyms.length === 0 ? (
-        <EmptyDatabaseState />
-      ) : filteredGyms.length === 0 ? (
-        <EmptySearchState />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredGyms.map((gymObj) => (
-            <Gym
-              key={gymObj.id}
-              id={gymObj.id}
-              name={gymObj.name}
-              rating={gymObj.rating}
-              location={gymObj.location}
-              description={gymObj.description}
-              image={gymObj.image}
-              onDelete={handleDeleteGym}
-            />
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Borough tabs */}
+        <div className="flex flex-wrap gap-0 border-b border-border">
+          {BOROUGH_TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => handleBoroughChange(tab)}
+              className={`px-5 py-3 text-sm uppercase tracking-widest transition-colors ${
+                activeBorough === tab
+                  ? "border-b-2 border-foreground text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab}
+            </button>
           ))}
         </div>
-      )}
+
+        {/* Search */}
+        <div className="flex gap-3 max-w-lg">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or address…"
+            className="h-10"
+          />
+          {query && (
+            <Button variant="outline" onClick={() => setQuery("")} className="h-10">
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-4">
+              Fetching live data from OpenStreetMap…
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="border border-border p-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" onClick={retry}>
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* OSM Gym grid */}
+        {!loading && !error && (
+          <>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              {filteredGyms.length} {filteredGyms.length === 1 ? "gym" : "gyms"} found
+            </p>
+            {filteredGyms.length === 0 ? (
+              <div className="border border-border p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No gyms match your filters.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredGyms.map((gym) => (
+                  <OSMGymCard key={gym.osmId} gym={gym} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* My Submissions collapsible */}
+        <div className="border-t border-border pt-8">
+          <button
+            className="flex items-center gap-3 text-sm uppercase tracking-widest text-foreground mb-4 w-full text-left"
+            onClick={() => setShowSubmissions((v) => !v)}
+          >
+            <span>My Submissions</span>
+            {!dbLoading && (
+              <span className="text-muted-foreground">({dbGyms.length})</span>
+            )}
+            <span className="ml-auto text-muted-foreground">
+              {showSubmissions ? "▲" : "▼"}
+            </span>
+          </button>
+
+          {showSubmissions && (
+            dbLoading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : dbGyms.length === 0 ? (
+              <div className="border border-border p-6 text-center">
+                <p className="text-sm text-muted-foreground">No submissions yet.</p>
+                <a
+                  href="/addgym"
+                  className="text-xs uppercase tracking-widest underline underline-offset-2 mt-2 inline-block"
+                >
+                  Add a gym
+                </a>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {dbGyms.map((g) => (
+                  <Gym
+                    key={g.id}
+                    id={g.id}
+                    name={g.name}
+                    rating={g.rating}
+                    location={g.location}
+                    description={g.description}
+                    image={g.image}
+                    onDelete={handleDeleteGym}
+                  />
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }
