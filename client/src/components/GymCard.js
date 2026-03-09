@@ -40,7 +40,7 @@ function GymCard() {
   // Flask DB gyms
   const [dbGyms, setDbGyms] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
-  const [showSubmissions, setShowSubmissions] = useState(false);
+  const [showSubmissions, setShowSubmissions] = useState(true);
 
   useEffect(() => {
     fetch("http://localhost:5555/gyms")
